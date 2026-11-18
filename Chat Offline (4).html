@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chat Offline</title>
+<style>
+:root{--bg:#f0f2f5;--panel:#fff;--text:#111b21;--sub:#667781;--green:#008069;--out:#d9fdd3;--in:#fff;--chat:#efeae2;--line:#e9edef;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b141a;--panel:#111b21;--text:#e9edef;--sub:#8696a0;--green:#00a884;--out:#005c4b;--in:#202c33;--chat:#0b141a;--line:#222d34}}
+:root[data-theme="dark"]{--bg:#0b141a;--panel:#111b21;--text:#e9edef;--sub:#8696a0;--green:#00a884;--out:#005c4b;--in:#202c33;--chat:#0b141a;--line:#222d34}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+input{font:inherit;color:var(--text)}
+svg{display:block}
+.app{height:100%;max-width:520px;margin:0 auto;background:var(--panel);position:relative;overflow:hidden}
+.view{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--panel);transition:transform .22s}
+#chat{transform:translateX(100%);background:var(--chat)}
+.open #chat{transform:none}
+.top{background:var(--green);color:#fff;padding:10px 12px;display:flex;align-items:center;gap:8px;min-height:56px}
+.top h1{font-size:20px;font-weight:600;flex:1}
+.ico{padding:6px;color:#fff;border-radius:50%}
+.search{padding:8px 12px}
+.search input{width:100%;padding:9px 14px;border-radius:20px;border:0;background:var(--bg)}
+.list{flex:1;overflow-y:auto}
+.item{display:flex;gap:12px;padding:10px 14px;width:100%;text-align:left;align-items:center}
+.item:active{background:var(--bg)}
+.av{border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:600;font-size:18px;flex:none;overflow:hidden}
+.av img{width:100%;height:100%;object-fit:cover}
+.meta{flex:1;min-width:0;border-bottom:1px solid var(--line);padding-bottom:10px}
+.row{display:flex;justify-content:space-between;gap:8px}
+.name{font-weight:600;display:flex;align-items:center;gap:4px}
+.time{font-size:12px;color:var(--sub)}
+.last{color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
+.empty{text-align:center;color:var(--sub);padding:48px 24px}
+.fab{position:absolute;right:18px;bottom:calc(30px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border-radius:16px;background:var(--green);color:#fff;display:grid;place-items:center;box-shadow:0 3px 10px rgba(0,0,0,.3)}
+.note{font-size:12px;color:var(--sub);text-align:center;padding:6px}
+.tt{flex:1;min-width:0;cursor:pointer}
+.tt h1{font-size:17px;display:flex;align-items:center;gap:5px}
+.tt .time{color:#fff;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.msgs{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:4px}
+.b{max-width:82%;padding:6px 9px 4px;border-radius:9px;background:var(--in);word-wrap:break-word;white-space:pre-wrap;box-shadow:0 1px 1px rgba(0,0,0,.12)}
+.b.me{align-self:flex-end;background:var(--out)}
+.b small{display:flex;justify-content:flex-end;align-items:center;gap:3px;font-size:11px;color:var(--sub);margin-top:2px}
+.b audio{height:38px;max-width:100%;display:block}
+.sn{font-size:12px;font-weight:600;color:var(--green);display:flex;align-items:center;gap:3px}
+.day{align-self:center;background:var(--in);color:var(--sub);font-size:12px;padding:3px 10px;border-radius:8px;margin:6px 0;display:flex;gap:6px;align-items:center}
+.bar,#rec{display:flex;gap:8px;padding:8px;align-items:center}
+.bar input{flex:1;padding:11px 16px;border-radius:24px;border:0;background:var(--panel)}
+.send{width:44px;height:44px;border-radius:50%;background:var(--green);color:#fff;display:grid;place-items:center;flex:none}
+#rec{display:none}
+#rec b{flex:1;color:#e53935}
+.modal{position:absolute;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;padding:20px;z-index:5}
+.modal.on{display:flex}
+.card{background:var(--panel);border-radius:14px;padding:18px;width:100%;max-height:88%;overflow-y:auto}
+.card h2{font-size:17px;margin-bottom:8px}
+.card input[type=text],.card input[type=tel]{width:100%;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--bg)}
+label{display:block;font-size:12px;color:var(--sub);margin:10px 0 3px}
+.acts{display:flex;justify-content:flex-end;gap:18px;margin-top:14px;color:var(--green);font-weight:600}
+.lnk{color:var(--green);font-weight:600;padding:8px 0;display:block}
+.pc{display:flex;justify-content:center;margin:6px 0}
+.mrow{display:flex;gap:10px;align-items:center;padding:7px 0;width:100%;text-align:left}
+.mrow .name{flex:1}
+.call{position:absolute;inset:0;background:#0b141a;color:#fff;display:none;flex-direction:column;align-items:center;justify-content:space-between;padding:70px 20px 40px;z-index:9}
+.call.on{display:flex}
+#lv{position:absolute;right:14px;top:14px;width:96px;height:132px;object-fit:cover;border-radius:10px;background:#222;display:none;transform:scaleX(-1)}
+.ci{text-align:center}.ci h2{margin:14px 0 4px}.ci p{color:#aebac1;font-size:14px}
+.cb{display:flex;gap:22px}
+.rb{width:58px;height:58px;border-radius:50%;background:#2a3942;color:#fff;display:grid;place-items:center}
+.rb.off{background:#fff;color:#111}
+.red{background:#e53935}.red svg{transform:rotate(135deg)}
+#toast{position:absolute;left:50%;bottom:90px;transform:translateX(-50%);background:#323232;color:#fff;padding:8px 14px;border-radius:18px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;max-width:85%;text-align:center}
+#toast.on{opacity:1}
+#toast{z-index:50}
+button,#ob,.top,.tabs,.item,.fab,.pr,.mrow{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+input,textarea,#ob input,.b{-webkit-user-select:text;user-select:text}
+.call .av{margin:0 auto}.ci{display:flex;flex-direction:column;align-items:center}.rb[data-a=ansc] svg{transform:none}.bar input:disabled{opacity:.6}.item .tag{font-size:11px;color:#e67e22;margin-left:6px;font-weight:400}
+.irow.dng{color:#e53935;font-weight:600;border-top:1px solid var(--line)}.ci h2{display:flex;align-items:center;justify-content:center;gap:6px}
+.selb{position:absolute;top:0;left:0;right:0;display:none;z-index:2}.selb.on{display:flex}.selb h1{flex:none!important;margin-right:auto}
+.msgs .b{-webkit-user-select:none;user-select:none}.b.sel{outline:2px solid var(--green);filter:brightness(.9)}
+#nv{transform:translateX(100%);z-index:6}.n #nv{transform:none}
+.nvh{background:var(--panel);color:var(--text)}.nvh .ico{color:var(--text)}.nvh h1{font-weight:400}
+.fld{display:flex;gap:16px;align-items:center;margin:16px 16px 0}.fld>svg{color:var(--sub);flex:none}.fld input,.fld select{flex:1;min-width:0;padding:16px 14px;border:1.5px solid var(--sub);border-radius:10px;background:none;color:var(--text);font:inherit}.fld select{flex:none;width:130px}.fld select option{color:#111}
+.sl{position:relative}.sl label{position:absolute;top:-9px;left:10px;background:var(--panel);padding:0 4px;margin:0;font-size:12px}
+.nvs{margin:auto 16px calc(16px + env(safe-area-inset-bottom,0px));padding:16px;border-radius:28px;background:var(--green);color:#fff;font-weight:600;font-size:16px}.nvs.dim{background:var(--line);color:var(--sub)}
+.kr .gi{width:48px;height:48px}.kr b{font-size:17px}
+#nw{position:fixed;inset:0;z-index:40;background:var(--bg);color:var(--text);overflow-y:auto;display:none}#nw.on{display:block}
+.nwc{max-width:720px;margin:0 auto;padding:20px 16px calc(40px + env(safe-area-inset-bottom,0px))}
+.nwh{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}.nwh h1{font-size:22px;line-height:1.2}.nwh small{font-size:14px;color:var(--sub);font-weight:400}
+.nwb{background:var(--green);color:#fff;border-radius:20px;padding:9px 14px;font-weight:600;font-size:14px}
+.nwk{background:var(--panel);border-radius:14px;padding:16px;margin-bottom:14px}.nwk h2{font-size:17px;margin-bottom:6px}
+.nwk input,.nwk select{width:100%;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit}
+.nrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line);flex-wrap:wrap}.nrow>div,.nrow>b{flex:1;min-width:140px}.nrow button{color:var(--green);font-weight:600}
+.otp{font-size:24px;font-weight:700;letter-spacing:4px;color:var(--green)}.otp.dim{color:var(--sub);text-decoration:line-through}
+.obx2{color:#21c063;font-weight:600;padding:8px;text-align:center}
+.obb.dim{background:#202c33;color:#5b6a73}
+.card select{width:100%;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit}
+#ob{position:absolute;inset:0;z-index:19;background:#0b141a;color:#e9edef;display:none;flex-direction:column;padding:20px 24px calc(24px + env(safe-area-inset-bottom,0px))}#ob.on{display:flex}
+#ob h1{font-size:28px;font-weight:400;text-align:center}
+.obm{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px}
+.obp{color:#8696a0;font-size:15px;line-height:1.5}.obp b{color:#21c063;font-weight:600}
+.obb{background:#21c063;color:#0b141a;font-weight:600;border-radius:28px;padding:16px;width:100%;font-size:16px}.obb:disabled{background:#202c33;color:#5b6a73}
+.obl{width:100%;max-width:300px;border-bottom:2px solid #21c063;padding:8px 0;display:flex;align-items:center;gap:8px;color:#e9edef}
+.obl select,.obl input{background:none;border:0;outline:0;color:#e9edef;font-size:18px;width:100%;font-family:inherit}.obl select option{color:#111}
+.obr{display:flex;gap:20px;width:100%;max-width:300px}
+.obx{position:absolute;top:18px;right:20px;color:#8696a0}
+#iv,#sg{transform:translateX(100%);z-index:3}#sg{z-index:4}.i #iv,.g #sg{transform:none}
+.iav{display:flex;justify-content:center;margin:24px 0 10px}
+.ih{text-align:center;padding:0 16px}.in{font-size:22px;font-weight:600;display:flex;justify-content:center;align-items:center;gap:6px}.is{color:var(--sub);margin-top:2px}
+.ia{display:flex;justify-content:center;gap:12px;padding:16px}.ia button{display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--green);border:1px solid var(--line);border-radius:12px;padding:12px 0;width:104px;font-size:13px}
+.isec{border-top:8px solid var(--bg);padding:12px 16px}
+.irow{display:flex;justify-content:space-between;width:100%;padding:14px 16px;text-align:left}.irow.red{color:#e53935;font-weight:600;border-top:8px solid var(--bg)}
+.ith{display:flex;gap:6px;margin-top:10px}.ith img{width:72px;height:72px;object-fit:cover;border-radius:6px;cursor:pointer}
+#pv{transform:translateX(100%);z-index:3}.p #pv{transform:none}
+.pav{position:relative;width:150px;height:150px;margin:28px auto 18px}
+.pcam{position:absolute;right:0;bottom:0;width:46px;height:46px;border-radius:50%;background:var(--green);color:#fff;display:grid;place-items:center;border:3px solid var(--panel)}
+.pr{display:flex;gap:18px;padding:12px 20px 0;width:100%;text-align:left;align-items:flex-start}
+.pr>svg{color:var(--sub);margin-top:2px;flex:none}
+.pr .pm{flex:1;min-width:0;border-bottom:1px solid var(--line);padding-bottom:12px}
+.pr small{display:block;color:var(--sub);font-size:13px}
+.pr .pv2{font-size:16px;display:flex;align-items:center;gap:5px;word-break:break-word}
+.pr .ed{color:var(--green);margin-top:8px}
+.pn{color:var(--sub);font-size:13px;padding:8px 20px 4px 62px}
+.tabs{display:flex;background:var(--green)}.tabs button{flex:1;padding:10px;color:#fff;opacity:.7;font-weight:600;border-bottom:3px solid transparent}.tabs button.on{opacity:1;border-color:#fff}
+.last{display:flex;align-items:center;gap:4px}.last span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+#kv{transform:translateX(100%);z-index:3}.k #kv{transform:none}
+.kr{padding:10px 14px}.gi{width:40px;height:40px;border-radius:50%;background:var(--green);color:#fff;display:grid;place-items:center;flex:none}
+.lt{padding:8px 14px;color:var(--green);font-weight:600;font-size:13px}
+.pic{display:block;max-width:100%;max-height:260px;border-radius:7px;margin-bottom:3px;cursor:pointer}
+.pv{max-width:100%;max-height:45vh;border-radius:8px}
+.ring{padding:2px;border-radius:50%;border:2.5px solid var(--green)}
+.stp{border-radius:12px;padding:14px;margin:8px 0}.stp textarea{width:100%;min-height:110px;background:none;border:0;outline:0;color:#fff;font-weight:600;font-size:20px;font-family:inherit;text-align:center;resize:none}
+.sw{display:flex;gap:10px}.sw button{width:30px;height:30px;border-radius:50%}
+#vw{position:absolute;inset:0;z-index:12;display:none;align-items:center;justify-content:center;color:#fff}#vw.on{display:flex}#vw>img{max-width:100%;max-height:100%}
+.pg{position:absolute;top:10px;left:10px;right:10px;display:flex;gap:4px}.pg i{flex:1;height:3px;background:rgba(255,255,255,.35);border-radius:2px;overflow:hidden}.pg i.d{background:#fff}.pg i.a::after{content:"";display:block;height:100%;background:#fff;animation:fl 5s linear forwards}@keyframes fl{from{width:0}to{width:100%}}
+.vh{position:absolute;top:24px;left:12px;display:flex;gap:10px;align-items:center}
+.vt{font-weight:600;font-size:24px;line-height:1.3;text-align:center;padding:30px;white-space:pre-wrap}
+.vc{position:absolute;bottom:30px;left:0;right:0;text-align:center;padding:0 20px;text-shadow:0 1px 3px #000}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <section class="view" id="home">
+    <div class="top"><h1>Chat Offline</h1>
+      <button class="ico" data-a="newg" data-i="grp" aria-label="Grup baru"></button>
+      <button class="ico" data-a="kon" data-i="con" aria-label="Daftar nomor"></button>
+      <button class="ico" data-a="prof" data-i="usr" aria-label="Profil"></button></div>
+    <div class="tabs"><button data-a="tab" data-t="c" class="on">Chat</button><button data-a="tab" data-t="s">Status</button></div><div class="search"><input id="q" placeholder="Cari nama atau nomor…" autocomplete="off"></div>
+    <div class="list" id="list"></div><div class="list" id="stl" style="display:none"></div>
+    <div class="note">Semua pesan tersimpan di perangkat ini, tanpa internet.</div>
+    <button class="fab" id="fab" data-a="addc" data-i="plus" aria-label="Daftarkan kontak"></button>
+  </section>
+  <section class="view" id="chat">
+    <div class="top"><button class="ico" data-a="back" data-i="back" aria-label="Kembali"></button><div id="cav" data-a="info"></div><div class="tt" data-a="info"><h1 id="cname"></h1><div id="csub" class="time"></div></div><button class="ico" data-a="vcall" data-i="vid" aria-label="Video call"></button><button class="ico" data-a="call" data-i="ph" aria-label="Telepon"></button></div>
+    <div class="msgs" id="msgs"></div>
+    <div class="bar" id="bar"><button class="ico" data-a="att" data-i="img" style="color:var(--sub)" aria-label="Kirim foto"></button><input type="file" id="fp" accept="image/*" hidden><input id="txt" placeholder="Ketik pesan" autocomplete="off"><button class="send" id="sv" data-a="sv" aria-label="Kirim"></button></div>
+    <div id="rec"><button class="ico" data-a="rc" style="color:var(--sub)" data-i="del" aria-label="Batal"></button><b id="rt">0:00</b><button class="send" data-a="rs" data-i="send" aria-label="Kirim suara"></button></div>
+  </section>
+  <section class="view" id="nv"><div class="top nvh"><button class="ico" data-a="nb" data-i="back" aria-label="Kembali"></button><h1>Kontak baru</h1></div><div id="nvb" style="flex:1;overflow-y:auto"></div><button class="nvs dim" id="nsv" data-a="nsave">Simpan</button></section>
+  <section class="view" id="iv"><div class="top"><button class="ico" data-a="ib" data-i="back" aria-label="Kembali"></button><h1 id="ivt"></h1></div><div class="list" id="ivb"></div></section>
+  <section class="view" id="sg"><div class="top"><button class="ico" data-a="sb" data-i="back" aria-label="Kembali"></button><h1>Pengaturan</h1></div><div class="list" id="sl"></div></section>
+  <section class="view" id="pv"><div class="top"><button class="ico" data-a="pb" data-i="back" aria-label="Kembali"></button><h1>Profil</h1></div><div class="list" id="pl"></div><input type="file" id="ft" accept="image/*" hidden></section>
+  <section class="view" id="kv"><div class="top"><button class="ico" data-a="kb" data-i="back" aria-label="Kembali"></button><div class="tt" style="cursor:default"><h1>Pilih kontak</h1><div class="time" id="kc"></div></div><button class="ico" data-a="ksr" data-i="srch" aria-label="Cari"></button></div><div class="search" id="ksb" style="display:none"><input id="kq" placeholder="Cari nama atau nomor…" autocomplete="off"></div><div class="list" id="kl"></div></section>
+  <div class="modal" id="m"><div class="card" id="mc"></div></div>
+  <div class="call" id="call"></div>
+  <div id="ob"></div><div id="nw"></div><div id="toast"></div><div id="vw"></div><input type="file" id="fs" accept="image/*" hidden>
+</div>
+<script>
+(function(){
+var KEY='chat-offline-v1',cur=null,db={me:null,chats:[]},mr=null,ch=[],rt=0,ri=0,cl=null;
+var $=function(i){return document.getElementById(i)};
+var P={ph:'M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z',vid:'M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z',mic:'M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z',send:'M2.01 21L23 12 2.01 3 2 10l15 2-15 2z',back:'M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z',usr:'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z',grp:'M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z',plus:'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z',con:'M20 0H4v2h16V0zM4 24h16v-2H4v2zM20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 2.75c1.24 0 2.25 1.01 2.25 2.25s-1.01 2.25-2.25 2.25S9.75 10.24 9.75 9 10.76 6.75 12 6.75zM17 17H7v-1.5c0-1.67 3.33-2.5 5-2.5s5 .83 5 2.5V17z',del:'M6 19a2 2 0 002 2h8a2 2 0 002-2V7H6zM19 4h-3.5l-1-1h-5l-1 1H5v2h14z',img:'M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z',cam:'M12 15.2a3.2 3.2 0 100-6.4 3.2 3.2 0 000 6.4zM9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z',pen:'M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z',addu:'M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z',inf:'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z',cfg:'M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z',sun:'M12 7a5 5 0 100 10 5 5 0 000-10zM2 13h2v-2H2v2zm18 0h2v-2h-2v2zM11 2v2h2V2h-2zm0 18v2h2v-2h-2z',sto:'M2 20h20v-4H2v4zm2-3h2v2H4v-2zM2 4v4h20V4H2zm4 3H4V5h2v2zm-4 7h20v-4H2v4zm2-3h2v2H4v-2z',srch:'M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'};
+function ic(n,s){s=s||24;return '<svg viewBox="0 0 24 24" width="'+s+'" height="'+s+'" fill="currentColor"><path d="'+P[n]+'"/></svg>'}
+var BADGE='<svg viewBox="0 0 24 24" width="16" height="16" aria-label="Admin terverifikasi"><path fill="#1d9bf0" d="M12 1l2.6 1.9 3.2-.1 1 3 2.6 1.9-1 3.1 1 3.1-2.6 1.9-1 3-3.2-.1L12 23l-2.6-1.9-3.2.1-1-3-2.6-1.9 1-3.1-1-3.1 2.6-1.9 1-3 3.2.1z"/><path d="M7.5 12.3l3 3 6-6.3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+var TICK_OLD='<svg viewBox="0 0 18 18" width="16" height="16"><path d="M1 9.5l3.5 3.5L12 5.5M7 12.5l1 1L16 5.5" fill="none" stroke="#8696a0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+var ADMINS=['0882006038555'];
+function norm(n){n=(n||'').replace(/\D/g,'');return n.charAt(0)==='0'?'62'+n.slice(1):n}
+function isAdm(n){n=norm(n);return !!n&&ADMINS.some(function(a){return norm(a)===n})}
+function vb(n){return isAdm(n)?BADGE:''}
+function tick(m){return '<svg viewBox="0 0 16 11" width="16" height="11" fill="none" stroke="#8696a0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-label="'+(m.s===1?'Terkirim':'Diterima')+'"><path d="M1.5 5.8l3.2 3.2L11.5 1.5"/>'+(m.s===1?'':'<path d="M4.8 5.8L8 9l6.8-7.5"/>')+'</svg>'}
+var cols=['#d9534f','#8e44ad','#2980b9','#16a085','#e67e22','#c0392b','#2c3e50','#27ae60'];
+function col(n){var h=0;for(var i=0;i<n.length;i++)h+=n.charCodeAt(i);return cols[h%cols.length]}
+function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML}
+function hm(ts){var d=new Date(ts);return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)}
+function fmt(s){s=Math.round(s);return Math.floor(s/60)+':'+('0'+s%60).slice(-2)}
+function dl(ts){var d=new Date(ts);if(d.toDateString()===new Date().toDateString())return 'Hari ini';return d.toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}
+function av(o,s){var ph=o.photo||(o.num&&!o.group?pfPhoto(o.num):'');return '<div class="av" style="width:'+s+'px;height:'+s+'px;background:'+col(o.name)+';font-size:'+Math.round(s*.4)+'px">'+(ph?'<img src="'+ph+'" alt="">':o.group?ic('grp',Math.round(s*.55)):esc(o.name.charAt(0).toUpperCase()))+'</div>'}
+function toast(t){var e=$('toast');e.textContent=t;e.classList.add('on');setTimeout(function(){e.classList.remove('on')},2600)}
+function save(){try{localStorage.setItem(K(),JSON.stringify(db));return 1}catch(e){return 0}}
+function load(){try{var s=localStorage.getItem(K());if(s)db=JSON.parse(s)}catch(e){}
+  db.status=db.status||[];if(!db.chats||!db.chats.length)db.chats=[{id:1,name:'Catatan Saya',self:1,msgs:[{me:0,t:'Selamat datang di Chat Offline! Pesan di sini tersimpan di perangkatmu dan bisa dipakai tanpa internet.',ts:Date.now()}]}]}
+function find(id){for(var i=0;i<db.chats.length;i++)if(db.chats[i].id==id)return db.chats[i]}
+function lastTs(c){var m=c.msgs[c.msgs.length-1];return m?m.ts:0}
+function valid(v){return /^\+?\d{8,15}$/.test(v)}
+function modal(h){$('mc').innerHTML=h;$('m').classList.add('on')}
+function closeM(){$('m').classList.remove('on')}
+function renderList(){var q=$('q').value.toLowerCase(),h='';
+  db.chats.slice().sort(function(a,b){return lastTs(b)-lastTs(a)}).filter(function(c){return !c.hidden&&(c.name.toLowerCase().indexOf(q)>-1||(c.num||'').indexOf(q)>-1)}).forEach(function(c){var m=c.msgs[c.msgs.length-1];
+    h+='<button class="item" data-a="open" data-id="'+c.id+'">'+av(c,46)+'<div class="meta"><div class="row"><span class="name">'+esc(c.name)+vb(c.num)+(c.blocked?'<span class="tag">Diblokir</span>':regOk(c)?'':'<span class="tag">Belum terdaftar</span>')+'</span><span class="time">'+(m?hm(m.ts):'')+'</span></div><div class="last">'+(m&&m.me&&!m.k?tick(m):'')+'<span>'+(m?(m.a?'Pesan suara':m.img?'Foto'+(m.t?': '+esc(m.t):''):esc(m.t)):'Belum ada pesan')+'</span></div></div></button>'});
+  $('list').innerHTML=h||'<div class="empty">Tidak ada chat. Ketuk + untuk mendaftarkan kontak.</div>'}
+function renderMsgs(){var c=find(cur),h='',pd='',mm=c.group?c.members.filter(function(x){return x.me})[0]:null,adm=mm&&mm.ad;
+  c.msgs.forEach(function(m,mi){var d=dl(m.ts);if(d!==pd){h+='<div class="day">'+d+'</div>';pd=d}
+    if(m.k){h+='<div class="day">'+ic(m.v?'vid':'ph',14)+esc(m.t)+'</div>';return}
+    h+='<div class="b'+(m.me?' me':'')+(sel.indexOf(mi)>-1?' sel':'')+'" data-mi="'+mi+'">'+(c.group&&m.me?'<div class="sn">Kamu'+vb(db.me.num)+'</div>':'')+(m.img?'<img class="pic" data-a="zoom" src="'+m.img+'" alt="Foto">':'')+(m.a?'<audio controls src="'+m.a+'"></audio>':esc(m.t||''))+'<small>'+hm(m.ts)+(m.me?tick(m):'')+'</small></div>'});
+  $('msgs').innerHTML=h;$('msgs').scrollTop=1e9}
+function openChat(id){cur=id;var c=find(id);c.hidden=0;sel=[];if($('selb'))$('selb').classList.remove('on');$('cname').innerHTML=esc(c.name)+vb(c.num);$('cav').innerHTML=av(c,38);
+  $('csub').textContent=c.group?c.members.map(function(m){return m.me?'Kamu':m.n}).join(', '):(c.num?dn(c.num):(c.self?'Catatan pribadi':'offline'));
+  renderMsgs();$('app').classList.remove('k');$('app').classList.add('open');setSv();chkBar(1)}
+function push(m){var c=find(cur);m.ts=Date.now();if(m.me&&!m.k)m.s=1;c.msgs.push(m);if(m.s){m.id=Date.now()+'-'+rnd(3);deliver(c,m)}if(!save()){c.msgs.pop();toast('Memori perangkat penuh. Hapus pesan suara lama.')}renderMsgs();renderList()}
+function setSv(){$('sv').innerHTML=$('txt').value.trim()?ic('send'):ic('mic')}
+function sendT(){var v=$('txt').value.trim();if(!v)return;if(!regOk(find(cur)))return chkBar();push({me:1,t:v});$('txt').value='';setSv()}
+function recStart(){if(!navigator.mediaDevices||!window.MediaRecorder){toast('Perangkat tidak mendukung rekam suara.');return}
+  navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){mr=new MediaRecorder(s);mr._s=s;ch=[];mr.ondataavailable=function(e){ch.push(e.data)};mr.start();rt=Date.now();$('bar').style.display='none';$('rec').style.display='flex';$('rt').textContent='0:00';ri=setInterval(function(){$('rt').textContent=fmt((Date.now()-rt)/1000)},500)}).catch(function(){toast('Izinkan akses mikrofon untuk voice note.')})}
+function recStop(ok){if(!mr)return;var m=mr,d=Math.round((Date.now()-rt)/1000);mr=null;clearInterval(ri);
+  m.onstop=function(){m._s.getTracks().forEach(function(t){t.stop()});if(ok&&d>0){var r=new FileReader();r.onload=function(){push({me:1,a:r.result,d:d})};r.readAsDataURL(new Blob(ch,{type:m.mimeType}))}};
+  m.stop();$('rec').style.display='none';$('bar').style.display='flex'}
+function startCallOld(v){var c=find(cur);if(c.self){toast('Tidak bisa menelepon diri sendiri.');return}
+  cl={v:v,t:0,s:null};
+  $('call').innerHTML='<video id="lv" autoplay muted playsinline></video><div class="ci">'+av(c,96)+'<h2>'+esc(c.name)+'</h2><p id="cs">Memanggil…</p><p style="margin-top:10px;font-size:12px">Mode offline: panggilan disimulasikan di perangkat ini.</p></div><div class="cb"><button class="rb" data-a="mute" aria-label="Bisukan">'+ic('mic',26)+'</button>'+(v?'<button class="rb" data-a="cam" aria-label="Kamera">'+ic('vid',26)+'</button>':'')+'<button class="rb red" data-a="endc" aria-label="Akhiri">'+ic('ph',26)+'</button></div>';
+  $('call').classList.add('on');
+  if(navigator.mediaDevices)navigator.mediaDevices.getUserMedia({audio:true,video:v}).then(function(s){if(!cl){s.getTracks().forEach(function(t){t.stop()});return}cl.s=s;if(v){$('lv').srcObject=s;$('lv').style.display='block'}}).catch(function(){toast('Izin mikrofon/kamera ditolak. Panggilan tetap disimulasikan.')});
+  cl.i=setInterval(function(){cl.t++;var s=$('cs');if(cl.t==2)s.textContent='Berdering…';else if(cl.t>=4)s.textContent=fmt(cl.t-4)},1000)}
+function track(k){return cl&&cl.s?cl.s.getTracks().filter(function(t){return t.kind===k})[0]:null}
+function profileOld(){var m=db.me;modal('<h2 style="display:flex;align-items:center;gap:5px">Profil'+vb(m.num)+'</h2><div class="pc">'+av(m,84)+'</div><button class="lnk" data-a="foto" style="text-align:center;width:100%">Ganti foto</button><input type="file" id="ft" accept="image/*" hidden><label>Nama</label><input type="text" id="pn" maxlength="25" value="'+esc(m.name).replace(/"/g,'&quot;')+'"><label>Info</label><input type="text" id="pb" maxlength="60" value="'+esc(m.bio).replace(/"/g,'&quot;')+'"><label>Nomor HP</label><input type="tel" id="pp" maxlength="16" value="'+esc(m.num)+'"><button class="lnk" data-a="theme">Ganti tema terang/gelap</button><div class="acts"><button data-a="x">Batal</button><button data-a="saveP">Simpan</button></div>')}
+function infoOld(){var c=find(cur),h;
+  if(c.group){h='<h2>'+esc(c.name)+'</h2><div class="pc">'+av(c,72)+'</div><label>Anggota ('+c.members.length+'). Ketuk anggota untuk menjadikan atau mencabut admin.</label>'+c.members.map(function(m,i){return '<button class="mrow" data-a="tgl" data-n="'+i+'">'+av({name:m.n,photo:m.me&&db.me.photo},36)+'<span class="name">'+esc(m.n)+(m.me?' (Kamu)':'')+vb(m.me?db.me.num:m.num)+'</span>'+(m.ad?'<span class="time">Admin</span>':'')+'</button>'}).join('')+'<button class="lnk" data-a="delc">Hapus grup</button>'}
+  else h='<h2 style="display:flex;align-items:center;gap:5px">'+esc(c.name)+vb(c.num)+'</h2><div class="pc">'+av(c,72)+'</div><label>Nomor</label><div>'+esc(c.num||'Belum ada nomor')+'</div>'+(c.self?'':'<button class="lnk" data-a="delc">Hapus chat</button>');
+  modal(h+'<div class="acts"><button data-a="x">Tutup</button></div>')}
+var A={
+  open:function(a){closeM();openChat(a.dataset.id)},
+  back:function(){$('app').classList.remove('open');$('app').classList.remove('i');sel=[];if($('selb'))$('selb').classList.remove('on');cur=null;renderList()},
+  info:function(){info()},
+  call:function(){startCall(0)},vcall:function(){startCall(1)},
+  sv:function(){if($('txt').value.trim())sendT();else recStart()},
+  rc:function(){recStop(0)},rs:function(){recStop(1)},
+  x:function(){closeM()},
+  prof:profile,
+  theme:function(){var r=document.documentElement,d=r.getAttribute('data-theme'),dark=d?d==='dark':matchMedia('(prefers-color-scheme:dark)').matches;r.setAttribute('data-theme',dark?'light':'dark')},
+  foto:function(){$('ft').click()},
+  saveP:function(){var n=$('pn').value.trim(),p=$('pp').value.replace(/[^0-9+]/g,'');if(!n)return toast('Nama wajib diisi.');if(!valid(p))return toast('Nomor HP tidak valid.');
+    db.me.name=n;db.me.bio=$('pb').value.trim();db.me.num=p;db.chats.forEach(function(c){(c.members||[]).forEach(function(m){if(m.me)m.n=n})});save();closeM();renderList()},
+  reg:function(){var n=$('rn').value.trim(),p=$('rp').value.replace(/[^0-9+]/g,'');if(!n)return toast('Nama wajib diisi.');if(!valid(p))return toast('Nomor HP 8 sampai 15 angka.');
+    db.me={name:n,num:p,bio:'Halo! Saya pakai Chat Offline.'};save();closeM();renderList()},
+  addc:function(){modal('<h2>Daftarkan kontak</h2><label>Nama</label><input type="text" id="nm" maxlength="30" autocomplete="off"><label>Nomor HP</label><input type="tel" id="no" maxlength="16" placeholder="0812…" autocomplete="off"><div class="acts"><button data-a="x">Batal</button><button data-a="saveC">Daftar</button></div>')},
+  saveC:function(){var n=$('nm').value.trim(),p=$('no').value.replace(/[^0-9+]/g,'');if(!n)return toast('Nama wajib diisi.');if(!valid(p))return toast('Nomor HP 8 sampai 15 angka.');
+    var d=db.chats.filter(function(c){return c.num===p})[0];if(d){toast('Nomor sudah terdaftar.');closeM();openChat(d.id);return}
+    var id=Date.now();db.chats.push({id:id,name:n,num:p,msgs:[]});save();closeM();renderList();openChat(id)},
+  kon:function(){var cs=db.chats.filter(function(c){return !c.group&&!c.self}).sort(function(a,b){return a.name.localeCompare(b.name)});
+    modal('<h2>Daftar nomor</h2>'+(cs.length?cs.map(function(c){return '<button class="mrow" data-a="open" data-id="'+c.id+'">'+av(c,38)+'<div><div class="name">'+esc(c.name)+vb(c.num)+'</div><div class="time">'+esc(c.num||'Belum ada nomor')+'</div></div></button>'}).join(''):'<div class="empty">Belum ada kontak terdaftar.</div>')+'<button class="lnk" data-a="addc">+ Daftarkan kontak</button><div class="acts"><button data-a="x">Tutup</button></div>')},
+  newg:function(){var cs=db.chats.filter(function(c){return !c.group&&!c.self});
+    if(!cs.length){toast('Daftarkan kontak dulu untuk membuat grup.');return}
+    modal('<h2>Grup baru</h2><label>Nama grup</label><input type="text" id="gn" maxlength="30" autocomplete="off"><label>Pilih anggota</label>'+cs.map(function(c){return '<label class="mrow" style="margin:0;color:var(--text);font-size:15px"><input type="checkbox" class="gm" value="'+c.id+'">'+esc(c.name)+'</label>'}).join('')+'<div class="acts"><button data-a="x">Batal</button><button data-a="saveG">Buat grup</button></div>')},
+  saveG:function(){var n=$('gn').value.trim(),sel=[].slice.call(document.querySelectorAll('.gm:checked')).map(function(e){return find(e.value)});
+    if(!n)return toast('Nama grup wajib diisi.');if(!sel.length)return toast('Pilih minimal satu anggota.');
+    var id=Date.now(),mem=[{n:db.me.name,me:1,ad:1}].concat(sel.map(function(c){return {n:c.name,num:c.num,ad:0}}));
+    db.chats.push({id:id,name:n,group:1,members:mem,msgs:[{k:1,me:1,t:'Kamu membuat grup "'+n+'" dan menjadi admin',ts:Date.now()}]});save();closeM();renderList();openChat(id)},
+  tgl:function(a){var c=find(cur),m=c.members[a.dataset.n];if(m.me){toast('Kamu admin pembuat grup.');return}m.ad=m.ad?0:1;save();info();renderMsgs()},
+  delc:function(){if(!confirm('Hapus chat ini?'))return;db.chats=db.chats.filter(function(c){return c.id!=cur});save();closeM();A.back()},
+  mute:function(a){var t=track('audio');if(t){t.enabled=!t.enabled;a.classList.toggle('off',!t.enabled)}},
+  cam:function(a){var t=track('video');if(t){t.enabled=!t.enabled;a.classList.toggle('off',!t.enabled)}},
+  endc:function(){if(!cl)return;var c=cl;cl=null;clearInterval(c.i);if(c.s)c.s.getTracks().forEach(function(t){t.stop()});$('call').classList.remove('on');
+    var d=Math.max(0,c.t-4);push({k:1,me:1,v:c.v,t:(c.v?'Video call':'Panggilan suara')+(d?' · '+fmt(d):' · dibatalkan')})}
+};
+document.addEventListener('click',function(e){var a=e.target.closest('[data-a]');if(a&&A[a.dataset.a])A[a.dataset.a](a)});
+document.addEventListener('change',function(e){if(e.target.id!=='ft'||!e.target.files[0])return;var r=new FileReader();r.onload=function(){var i=new Image();i.onload=function(){var c=document.createElement('canvas');c.width=c.height=160;var s=Math.min(i.width,i.height);c.getContext('2d').drawImage(i,(i.width-s)/2,(i.height-s)/2,s,s,0,0,160,160);db.me.photo=c.toDataURL('image/jpeg',.8);save();profile();renderList();pubProf()};i.src=r.result};r.readAsDataURL(e.target.files[0])});
+var tab='c',stBg='#008069',pimg='',simg='',vq=[],vi=0,vt=0,BGS=['#008069','#8e44ad','#2980b9','#c0392b','#e67e22','#2c3e50'];
+function shrink(f,max,cb){var r=new FileReader();r.onload=function(){var i=new Image();i.onload=function(){var k=Math.min(1,max/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=Math.round(i.width*k);c.height=Math.round(i.height*k);c.getContext('2d').drawImage(i,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.72))};i.src=r.result};r.readAsDataURL(f)}
+function live(){return db.status.filter(function(s){return Date.now()-s.ts<864e5})}
+function renderSt(){if(!db.me)return;var l=live(),m=db.me,t=l[l.length-1];$('stl').innerHTML='<button class="item" data-a="'+(l.length?'vst':'newst')+'"><div class="'+(l.length?'ring':'')+'">'+av(m,l.length?42:46)+'</div><div class="meta"><div class="name">Status saya'+vb(m.num)+'</div><div class="last"><span>'+(l.length?l.length+' status · '+hm(t.ts):'Ketuk untuk menambah status')+'</span></div></div></button><div class="note">Status hilang otomatis setelah 24 jam.</div>'+othersHtml()}
+function addSt(s){s.id=Date.now();s.ts=s.id;db.status.push(s);if(!save()){db.status.pop();toast('Memori perangkat penuh.');return}closeM();renderSt();pubSt();toast('Status diposting')}
+function showSt(){clearTimeout(vt);var w=$('vw');if(vi>=vq.length){w.classList.remove('on');return}var s=vq[vi];w.dataset.a='vnx';w.style.background=s.type==='t'?s.bg:'#000';w.innerHTML='<div class="pg">'+vq.map(function(x,i){return '<i class="'+(i<vi?'d':i==vi?'a':'')+'"></i>'}).join('')+'</div><div class="vh"><span data-a="vpf" data-k="foto">'+av(vo,36)+'</span><div data-a="vpf" data-k="prof"><b>'+esc(vo.name)+vb(vo.num)+'</b><div style="font-size:12px;opacity:.85">'+hm(s.ts)+'</div></div></div>'+(s.type==='t'?'<div class="vt">'+esc(s.txt)+'</div>':'<img src="'+s.img+'" alt=""><div class="vc">'+esc(s.txt)+'</div>');w.classList.add('on');vt=setTimeout(A.vnx,5000)}
+A.tab=function(a){tab=a.dataset.t;document.querySelectorAll('.tabs button').forEach(function(b){b.classList.toggle('on',b===a)});$('list').style.display=tab==='c'?'':'none';$('stl').style.display=tab==='s'?'block':'none';document.querySelector('.search').style.display=tab==='c'?'':'none';$('fab').dataset.a=tab==='c'?'addc':'newst';$('fab').innerHTML=ic(tab==='c'?'plus':'cam');if(tab==='s')renderSt()};
+A.newst=function(){modal('<h2>Buat status</h2><button class="mrow" data-a="sttxt"><span class="gi">'+ic('pen')+'</span>Status teks</button><button class="mrow" data-a="stfoto"><span class="gi">'+ic('cam')+'</span>Status foto</button><div class="acts"><button data-a="x">Batal</button></div>')};
+A.sttxt=function(){stBg=BGS[0];modal('<h2>Status teks</h2><div class="stp" id="stp" style="background:'+stBg+'"><textarea id="stt" maxlength="200" placeholder="Ketik status"></textarea></div><div class="sw">'+BGS.map(function(c){return '<button data-a="bg" data-c="'+c+'" style="background:'+c+'" aria-label="Warna"></button>'}).join('')+'</div><div class="acts"><button data-a="x">Batal</button><button data-a="posst">Posting</button></div>')};
+A.bg=function(a){stBg=a.dataset.c;$('stp').style.background=stBg};
+A.posst=function(){var t=$('stt').value.trim();if(!t)return toast('Tulis statusnya dulu.');addSt({type:'t',txt:t,bg:stBg})};
+A.stfoto=function(){$('fs').click()};
+A.posfoto=function(){addSt({type:'p',img:simg,txt:$('cap').value.trim()})};
+A.att=function(){$('fp').click()};
+A.sendp=function(){push({me:1,img:pimg,t:$('cap').value.trim()});closeM()};
+A.vst=function(){vq=live();vi=0;vo={name:'Status saya',num:db.me.num,photo:db.me.photo,own:1};showSt()};
+A.vnx=function(){vi++;showSt()};
+A.vcl=function(){$('vw').classList.remove('on')};
+A.zoom=function(a){var w=$('vw');clearTimeout(vt);w.dataset.a='vcl';w.style.background='#000';w.innerHTML='<img src="'+a.src+'" alt="">';w.classList.add('on')};
+function prow(i,l,v,a){return '<button class="pr" data-a="'+a+'">'+ic(i)+'<div class="pm"><small>'+l+'</small><div class="pv2">'+v+'</div></div><span class="ed">'+ic('pen',20)+'</span></button>'}
+function profile(){var m=db.me;$('pl').innerHTML='<div class="pav">'+av(m,150)+'<button class="pcam" data-a="foto" aria-label="Ganti foto">'+ic('cam')+'</button></div>'+prow('usr','Nama',esc(m.name)+vb(m.num),'pname')+'<div class="pn">Ini bukan nama pengguna atau PIN. Nama ini akan terlihat oleh kontak Chat Offline kamu.</div>'+prow('inf','Info',esc(m.bio),'pbio')+prow('ph','Telepon',esc(dn(m.num)),'pnum')+'<button class="pr" data-a="sg">'+ic('cfg')+'<div class="pm"><small>Pengaturan</small><div class="pv2">Akun, tema, penyimpanan</div></div></button>';$('app').classList.add('p')}
+function pedit(k,t,mx){var m=db.me;modal('<h2>'+t+'</h2><input type="'+(k==='num'?'tel':'text')+'" id="pf" maxlength="'+mx+'" value="'+esc(m[k]).replace(/"/g,'&quot;')+'" autocomplete="off"><div class="acts"><button data-a="x">Batal</button><button data-a="psv" data-k="'+k+'">Simpan</button></div>')}
+A.pname=function(){pedit('name','Masukkan nama kamu',25)};
+A.pbio=function(){pedit('bio','Tambahkan info',60)};
+A.pnum=function(){pedit('num','Nomor telepon',16)};
+A.psv=function(a){var k=a.dataset.k,v=$('pf').value.trim();if(k==='num'){v=v.replace(/[^0-9+]/g,'');if(!valid(v))return toast('Nomor HP 8 sampai 15 angka.')}if(k==='name'&&!v)return toast('Nama wajib diisi.');db.me[k]=v;if(k==='name')db.chats.forEach(function(c){(c.members||[]).forEach(function(x){if(x.me)x.n=v})});save();closeM();profile();renderList();pubProf()};
+A.pb=function(){$('app').classList.remove('p')};
+A.kb=function(){$('app').classList.remove('k')};
+var AC={active:'a0',list:['a0']},addPrev='a0';
+try{var _a=localStorage.getItem('chat-offline-acc');if(_a){AC=JSON.parse(_a);if(!AC.list||!AC.list.length)AC={active:'a0',list:['a0']}}}catch(e){}
+try{var _t=localStorage.getItem('chat-offline-theme');if(_t)document.documentElement.setAttribute('data-theme',_t)}catch(e){}
+function K(){return AC.active==='a0'?KEY:KEY+'-'+AC.active}
+function saveAC(){try{localStorage.setItem('chat-offline-acc',JSON.stringify(AC))}catch(e){}}
+function accMe(id){if(id===AC.active)return db.me;try{var d=JSON.parse(localStorage.getItem(id==='a0'?KEY:KEY+'-'+id));if(d&&d.me)return d.me}catch(e){}return {name:'Akun baru',num:''}}
+function views(){['open','k','p','g','i'].forEach(function(x){$('app').classList.remove(x)})}
+function goAcc(id){save();AC.active=id;saveAC();db={me:null,chats:[]};load();pull();subscribe();cur=null;views();renderList();renderSt()}
+function regMold(c){modal('<h2>Daftar</h2><p class="time">Buat akun Chat Offline di perangkat ini.</p><label>Nama</label><input type="text" id="rn" maxlength="25" autocomplete="off"><label>Nomor HP</label><input type="tel" id="rp" maxlength="16" placeholder="0812…" autocomplete="off"><div class="acts">'+(c?'<button data-a="regx">Batal</button>':'')+'<button data-a="reg">Daftar</button></div>')}
+function srow(i,t,s,a){return '<button class="pr" data-a="'+a+'" style="align-items:center">'+ic(i)+'<div class="pm" style="border:0"><div class="pv2">'+t+'</div><small>'+s+'</small></div></button>'}
+function renderSg(){var m=db.me;$('sl').innerHTML='<button class="pr" data-a="sb" style="align-items:center;padding:14px 16px">'+av(m,60)+'<div class="pm" style="border:0"><div class="pv2" style="font-size:18px">'+esc(m.name)+vb(m.num)+'</div><small>'+esc(m.bio)+'</small></div></button><div class="isec" style="padding:0"></div>'+srow('usr','Akun','Tambah akun dan ganti akun','acc')+srow('sun','Tema','Terang, gelap, atau ikuti sistem','thm')+srow('sto','Penyimpanan dan data','Lihat pemakaian dan hapus media','sto')+srow('grp','Chat antar HP',RDB?'Tersambung':'Tidak tersambung','nsync')+srow('con','Web Nomor dan OTP','Buat nomor dan lihat kode OTP','nw')+srow('inf','Tentang','Chat Offline versi 1.0','abt')}
+function info(){var c=find(cur);if(!c)return;var ph=c.msgs.filter(function(m){return m.img}),h='<div class="iav" data-a="ipf">'+av(c,120)+'</div><div class="ih"><div class="in">'+esc(c.name)+vb(c.num)+'</div><div class="is">'+(c.group?'Grup · '+c.members.length+' anggota':esc(c.num?dn(c.num):(c.self?'Catatan pribadi':'Belum ada nomor')))+'</div>'+profLines(c)+'</div>';
+  if(!c.self)h+='<div class="ia"><button data-a="call">'+ic('ph')+'<span>Audio</span></button><button data-a="vcall">'+ic('vid')+'<span>Video</span></button></div>';
+  h+='<div class="isec"><div style="display:flex;justify-content:space-between"><span>Media, tautan, dan dokumen</span><b>'+ph.length+'</b></div>'+(ph.length?'<div class="ith">'+ph.slice(-5).reverse().map(function(m){return '<img data-a="zoom" src="'+m.img+'" alt="Foto">'}).join('')+'</div>':'')+'</div>';
+  if(c.group)h+='<div class="isec"><small style="color:var(--sub)">'+c.members.length+' anggota. Ketuk anggota untuk mengatur admin.</small>'+c.members.map(function(m,i){return '<button class="mrow" data-a="tgl" data-n="'+i+'">'+av({name:m.n,photo:m.me&&db.me.photo},40)+'<span class="name">'+esc(m.n)+(m.me?' (Kamu)':'')+vb(m.me?db.me.num:m.num)+'</span>'+(m.ad?'<span class="time" style="color:var(--green)">Admin</span>':'')+'</button>'}).join('')+'</div>';
+  h+='<div class="isec" style="padding:0">'+(!c.group&&!c.self?'<button class="irow dng" data-a="blk">'+(c.blocked?'Buka blokir nomor':'Blokir nomor')+'</button>':'')+'<button class="irow dng" data-a="delc">'+(c.group?'Hapus grup':'Hapus chat')+'</button></div>';
+  $('ivb').innerHTML=h;$('ivt').textContent=c.group?'Info grup':'Info kontak';$('app').classList.add('i')}
+A.ib=function(){$('app').classList.remove('i')};
+A.sg=function(){renderSg();$('app').classList.add('g')};
+A.sb=function(){$('app').classList.remove('g')};
+A.acc=function(){var h='<h2>Akun</h2>';AC.list.forEach(function(id){var me=accMe(id);h+='<button class="mrow" data-a="swa" data-id="'+id+'">'+av(me,40)+'<div style="flex:1"><div class="name">'+esc(me.name)+vb(me.num)+'</div><div class="time">'+esc(me.num)+'</div></div>'+(id===AC.active?'<span class="time" style="color:var(--green)">Aktif</span>':'')+'</button>'});h+='<button class="mrow" data-a="adda"><span class="gi">'+ic('addu')+'</span><b>Tambah akun</b></button>';if(AC.list.length>1)h+='<button class="lnk" data-a="dela" style="color:#e53935">Hapus akun aktif</button>';modal(h+'<div class="acts"><button data-a="x">Tutup</button></div>')};
+A.swa=function(a){var id=a.dataset.id;closeM();if(id===AC.active)return;goAcc(id);renderSg();$('app').classList.add('g');toast('Beralih ke '+db.me.name)};
+A.adda=function(){addPrev=AC.active;var id='a'+Date.now();AC.list.push(id);closeM();goAcc(id);regM(true)};
+A.regx=function(){var id=AC.active;AC.list=AC.list.filter(function(x){return x!==id});goAcc(addPrev);try{localStorage.removeItem(KEY+'-'+id)}catch(e){}closeM();renderSg();$('app').classList.add('g')};
+A.dela=function(){if(!confirm('Hapus akun ini dan semua datanya dari perangkat?'))return;var id=AC.active;AC.list=AC.list.filter(function(x){return x!==id});try{localStorage.removeItem(id==='a0'?KEY:KEY+'-'+id)}catch(e){}AC.active=AC.list[0];saveAC();db={me:null,chats:[]};load();cur=null;views();renderList();renderSt();closeM();renderSg();$('app').classList.add('g');toast('Akun dihapus')};
+A.thm=function(){modal('<h2>Tema</h2><button class="mrow" data-a="tm" data-v="light">Terang</button><button class="mrow" data-a="tm" data-v="dark">Gelap</button><button class="mrow" data-a="tm" data-v="">Ikuti sistem</button><div class="acts"><button data-a="x">Tutup</button></div>')};
+A.tm=function(a){var v=a.dataset.v,r=document.documentElement;if(v)r.setAttribute('data-theme',v);else r.removeAttribute('data-theme');try{localStorage.setItem('chat-offline-theme',v)}catch(e){}closeM()};
+A.sto=function(){var n=0,f=0,v=0;db.chats.forEach(function(c){c.msgs.forEach(function(m){n++;if(m.img)f++;if(m.a)v++})});modal('<h2>Penyimpanan dan data</h2><p>'+n+' pesan, '+f+' foto, '+v+' pesan suara.</p><p class="time" style="margin-top:4px">Sekitar '+Math.round(JSON.stringify(db).length/1024)+' KB dipakai akun ini. Batas browser sekitar 5 MB untuk semua akun.</p><button class="lnk" data-a="clr" style="color:#e53935">Hapus semua foto dan pesan suara</button><div class="acts"><button data-a="x">Tutup</button></div>')};
+A.clr=function(){if(!confirm('Hapus semua foto dan pesan suara di akun ini?'))return;db.chats.forEach(function(c){c.msgs=c.msgs.filter(function(m){return !m.img&&!m.a})});save();closeM();renderList();toast('Media dihapus')};
+var CC=[['Indonesia','62'],['Kamboja','855'],['Laos','856'],['Malaysia','60'],['Singapura','65'],['Thailand','66'],['Vietnam','84'],['Filipina','63'],['Brunei','673'],['Timor Leste','670'],['Myanmar','95'],['India','91'],['Tiongkok','86'],['Jepang','81'],['Korea Selatan','82'],['Arab Saudi','966'],['Uni Emirat Arab','971'],['Australia','61'],['Inggris','44'],['Amerika Serikat','1']],ob={cc:'62',c:0};
+function ccOpts(s){return CC.map(function(c){return '<option value="'+c[1]+'"'+(c[1]===s?' selected':'')+'>'+c[0]+' (+'+c[1]+')</option>'}).join('')}
+function fullNum(cc,v){v=String(v).replace(/\D/g,'').replace(/^0+/,'');if(v.indexOf(cc)===0&&v.length>cc.length+7)v=v.slice(cc.length);if(cc==='62'&&!/^8\d{8,11}$/.test(v))return '';return /^\d{6,13}$/.test(v)?cc+v:''}
+function dn(n){return !n?'':n.charAt(0)==='0'?n:'+'+n}
+function obShow(h,x){var o=$('ob');o.innerHTML=(x?'<button class="obx" data-a="regx">Batal</button>':'')+h;o.classList.add('on')}
+function oerr(t){var e=$('oerr');if(e)e.textContent=t;else toast(t)}
+function obHide(){$('ob').classList.remove('on')}
+function chkN(){var e=$('oerr');if(e)e.textContent='';var b=$('onx');if(b)b.classList.toggle('dim',!fullNum($('occ').value,$('onum').value))}
+function regMwa(c){ob={c:c,cc:'62'};obShow('<div class="obm"><svg viewBox="0 0 220 200" width="220" height="200" aria-hidden="true"><path d="M20 50q0-14 14-14h96q14 0 14 14v52q0 14-14 14H60l-24 20v-20h-2q-14 0-14-14z" fill="#fdf3ea" stroke="#0b141a" stroke-width="3"/><circle cx="150" cy="60" r="38" fill="#a8e063" stroke="#0b141a" stroke-width="3"/><path d="M112 60h76M150 22v76" stroke="#0b141a" stroke-width="2.5"/><path d="M80 98q0-14 14-14h86q14 0 14 14v44q0 14-14 14h-30l-24 18v-18h-32q-14 0-14-14z" fill="#e3ffd9" stroke="#0b141a" stroke-width="3"/><path d="M60 140c-14-10-22-18-14-28 5-6 12-4 14 2 2-6 9-8 14-2 8 10 0 18-14 28z" fill="#00c9a0" stroke="#0b141a" stroke-width="3"/><rect x="130" y="140" width="38" height="34" rx="8" fill="#21c063" stroke="#0b141a" stroke-width="3"/><path d="M138 140v-10a11 11 0 0122 0v10" fill="none" stroke="#21c063" stroke-width="6"/></svg><h1>Selamat datang di Chat Offline</h1><p class="obp">Baca <b>Kebijakan Privasi</b> kami. Ketuk “Setuju dan lanjutkan” untuk menerima <b>Ketentuan Layanan</b>.</p><div style="color:#e9edef">Bahasa Indonesia</div></div><button class="obb" data-a="obn">Setuju dan lanjutkan</button>',c)}
+A.obn=function(){obShow('<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:16px;padding-top:50px"><h1 style="font-size:26px;color:#aebac1">Masukkan nomor telepon Anda</h1><p class="obp" style="text-align:center">Chat Offline akan memeriksa format nomor telepon Anda. Nomor harus memakai kode negara, contoh 62 untuk Indonesia.</p><div class="obl"><select id="occ">'+ccOpts(ob.cc)+'</select></div><div class="obr"><div class="obl" style="width:110px"><span>+</span><input id="ocode" value="'+ob.cc+'" readonly></div><div class="obl" style="flex:1"><input id="onum" type="tel" maxlength="14" placeholder="Nomor telepon" autocomplete="off"></div></div></div><button class="obb dim" id="onx" data-a="obnx">Berikutnya</button>',ob.c)};
+A.obnx=function(){var cc=$('occ').value,p=fullNum(cc,$('onum').value);if(!p)return toast(cc==='62'?'Nomor Indonesia tidak valid. Contoh: 8123456789 (9 sampai 12 digit, diawali 8).':'Nomor tidak valid untuk kode negara +'+cc+'.');if(!confirm('Nomor telepon: +'+p+'. Apakah nomor sudah benar?'))return;ob.cc=cc;ob.num=p;obShow('<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:16px;padding-top:50px"><h1 style="font-size:26px;color:#aebac1">Info profil</h1><p class="obp" style="text-align:center">Masukkan nama kamu. Nama ini akan terlihat oleh kontak.</p><div class="obl"><input id="oname" maxlength="25" placeholder="Nama" autocomplete="off"></div></div><button class="obb" data-a="obdone">Selesai</button>',ob.c)};
+A.obdone=function(){var n=$('oname').value.trim();if(!n)return toast('Nama wajib diisi.');db.me={name:n,num:ob.num,cc:ob.cc,bio:'Halo! Saya pakai Chat Offline.'};save();obHide();renderList();renderSt()};
+var _rx=A.regx;A.regx=function(){obHide();_rx()};
+document.addEventListener('change',function(e){if(e.target.id==='occ'){ob.cc=e.target.value;$('ocode').value=ob.cc;chkN()}});
+document.addEventListener('input',function(e){if(e.target.id==='onum')chkN()});
+A.addc=function(){modal('<h2>Kontak baru</h2><label>Nama</label><input type="text" id="nm" maxlength="30" autocomplete="off"><label>Negara</label><select id="cc">'+ccOpts(db.me&&db.me.cc||'62')+'</select><label>Nomor telepon</label><input type="tel" id="no" maxlength="14" placeholder="Nomor tanpa kode negara" autocomplete="off"><div class="acts"><button data-a="x">Batal</button><button data-a="saveC">Simpan</button></div>')};
+A.saveC=function(){var n=$('nm').value.trim(),p=fullNum($('cc').value,$('no').value);if(!n)return toast('Nama wajib diisi.');if(!p)return toast('Nomor tidak valid. Pilih negara dan isi nomor tanpa kode negara.');var d=db.chats.filter(function(c){return norm(c.num)===p})[0];if(d){toast('Nomor sudah terdaftar.');closeM();openChat(d.id);return}var id=Date.now();db.chats.push({id:id,name:n,num:p,msgs:[]});save();closeM();renderList();openChat(id)};
+A.pnum=function(){modal('<h2>Nomor telepon</h2><label>Negara</label><select id="cc">'+ccOpts(db.me.cc||'62')+'</select><label>Nomor telepon</label><input type="tel" id="pf" maxlength="14" placeholder="Nomor tanpa kode negara" autocomplete="off"><div class="acts"><button data-a="x">Batal</button><button data-a="psn">Simpan</button></div>')};
+A.psn=function(){var cc=$('cc').value,p=fullNum(cc,$('pf').value);if(!p)return toast('Nomor tidak valid untuk kode negara +'+cc+'.');db.me.num=p;db.me.cc=cc;save();closeM();profile();renderList();pubProf()};
+function lsG(k){try{return JSON.parse(localStorage.getItem(k))||[]}catch(e){return []}}
+function lsS(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function rnd(n){var a=new Uint32Array(n),s='';crypto.getRandomValues(a);for(var i=0;i<n;i++)s+=a[i]%10;return s}
+function newNum(cc){return cc==='62'?'628'+rnd(10):cc+rnd(9)}
+function otpSend(num){var c=rnd(6),l=lsG('co-otp').filter(function(o){return o.num!==num});l.push({num:num,code:c,ts:Date.now(),used:0});lsS('co-otp',l.slice(-20));return c}
+function otpCheck(num,code){var l=lsG('co-otp'),o=l.filter(function(x){return x.num===num})[0];if(!o||o.used||Date.now()-o.ts>3e5||o.code!==code)return 0;o.used=1;lsS('co-otp',l);return 1}
+function buildNw(){$('nw').innerHTML='<div class="nwc"><div class="nwh"><h1>Chat Offline<br><small>Nomor dan Kode OTP</small></h1><button class="nwb" data-a="nwx">Kembali ke Chat Offline</button></div><div class="nwk"><h2>Dapatkan nomor</h2><p class="time">Buat nomor baru atau daftarkan nomor milikmu. Nomor ini dipakai untuk mendaftar di Chat Offline.</p><label>Negara</label><select id="ncc">'+ccOpts('62')+'</select><div class="acts" style="justify-content:flex-start"><button data-a="nbuat">Buat nomor baru</button></div><label>Atau daftarkan nomor sendiri (tanpa kode negara)</label><input type="tel" id="nown" maxlength="14" placeholder="8123456789" autocomplete="off"><div class="acts" style="justify-content:flex-start"><button data-a="ndaf">Daftarkan nomor</button></div></div><div class="nwk"><h2>Nomor saya</h2><div id="nlist"></div></div><div class="nwk"><h2>Kode OTP masuk</h2><div id="olist"></div></div><p class="note">Web ini tersambung ke Chat Offline lewat penyimpanan browser yang sama. Kode OTP hanya dikirim ke nomor yang terdaftar di sini.</p></div>';updNw()}
+function updNw(){var a=$('nlist'),b=$('olist');if(!a||!b)return;var ns=lsG('co-nums'),os=lsG('co-otp').sort(function(x,y){return y.ts-x.ts}),now=Date.now();
+  a.innerHTML=ns.length?ns.map(function(n){return '<div class="nrow"><b>+'+esc(n.num)+'</b><span class="time">'+(n.used?'Terpakai':'Tersedia')+'</span><button data-a="ncopy" data-n="'+esc(n.num)+'">Salin</button><button data-a="ndel" data-n="'+esc(n.num)+'" style="color:#e53935">Hapus</button></div>'}).join(''):'<p class="time">Belum ada nomor.</p>';
+  b.innerHTML=os.length?os.map(function(o){var left=Math.max(0,300-Math.round((now-o.ts)/1000)),st=o.used?'Sudah dipakai':left?'Berlaku '+fmt(left):'Kedaluwarsa';return '<div class="nrow"><div><b>+'+esc(o.num)+'</b><div class="time">'+hm(o.ts)+' · '+st+'</div></div><span class="otp'+(o.used||!left?' dim':'')+'">'+esc(o.code)+'</span><button data-a="ncopy" data-n="'+esc(o.code)+'">Salin</button></div>'}).join(''):'<p class="time">Belum ada kode. Minta kode dari layar pendaftaran Chat Offline.</p>'}
+function route(){var on=location.hash==='#nomor',el=$('nw');if(on&&!el.classList.contains('on')){el.classList.add('on');buildNw()}else if(!on)el.classList.remove('on')}
+window.addEventListener('hashchange',route);
+document.addEventListener('contextmenu',function(e){if(e.target.closest&&e.target.closest('button'))e.preventDefault()});
+window.addEventListener('storage',function(e){if(e.key&&e.key.indexOf('co-')===0&&$('nw').classList.contains('on'))updNw()});
+setInterval(function(){if($('nw').classList.contains('on'))updNw()},1000);
+A.nw=function(){location.hash='nomor'};
+A.nwx=function(){location.hash=''};
+A.nbuat=function(){var cc=$('ncc').value,l=lsG('co-nums'),n;do{n=newNum(cc)}while(l.some(function(x){return x.num===n}));l.push({num:n,cc:cc,ts:Date.now(),used:0});lsS('co-nums',l);updNw();toast('Nomor +'+n+' dibuat')};
+A.ndaf=function(){var cc=$('ncc').value,p=fullNum(cc,$('nown').value);if(!p)return toast('Nomor tidak valid untuk kode negara +'+cc+'.');var l=lsG('co-nums');if(l.some(function(x){return x.num===p}))return toast('Nomor sudah terdaftar.');l.push({num:p,cc:cc,ts:Date.now(),used:0});lsS('co-nums',l);$('nown').value='';updNw();toast('Nomor didaftarkan')};
+A.ndel=function(a){lsS('co-nums',lsG('co-nums').filter(function(x){return x.num!==a.dataset.n}));updNw()};
+A.ncopy=function(a){var t=a.dataset.n;try{navigator.clipboard.writeText(t).then(function(){toast('Disalin')},function(){toast(t)})}catch(e){toast(t)}};
+var _on=A.obn;A.obn=function(){_on();var b=$('onx');if(b)b.insertAdjacentHTML('beforebegin','<div id="oerr" style="color:#ff8a80;text-align:center;font-size:14px;line-height:1.4;min-height:20px"></div><button class="obx2" data-a="nw">Belum punya nomor? Buat di web Nomor dan OTP</button>')};
+function obOtp(){obShow('<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:16px;padding-top:50px"><h1 style="font-size:26px;color:#aebac1">Verifikasi +'+ob.num+'</h1><p class="obp" style="text-align:center">Kode 6 digit sudah dikirim ke web Nomor dan OTP. Buka web itu, salin kodenya, lalu masukkan di sini. Kode berlaku 5 menit.</p><div class="obl" style="justify-content:center"><input id="oc" type="tel" inputmode="numeric" maxlength="6" placeholder="------" style="text-align:center;letter-spacing:10px;font-size:26px" autocomplete="one-time-code"></div><button class="obx2" data-a="nw">Buka web Nomor dan OTP</button><button class="obx2" data-a="obre">Kirim ulang kode</button></div><button class="obb" data-a="obv">Verifikasi</button>',ob.c)}
+function obName(){obShow('<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:16px;padding-top:50px"><h1 style="font-size:26px;color:#aebac1">Info profil</h1><p class="obp" style="text-align:center">Masukkan nama kamu. Nama ini akan terlihat oleh kontak.</p><div class="obl"><input id="oname" maxlength="25" placeholder="Nama" autocomplete="off"></div></div><button class="obb" data-a="obdone">Selesai</button>',ob.c)}
+A.obnx=function(){var cc=$('occ').value,p=fullNum(cc,$('onum').value);if(!p)return oerr(cc==='62'?'Nomor Indonesia tidak valid. Contoh: 8123456789 (9 sampai 12 digit, diawali 8).':'Nomor tidak valid untuk kode negara +'+cc+'.');if(!lsG('co-nums').some(function(x){return x.num===p}))return oerr('Nomor +'+p+' belum terdaftar di web Nomor dan OTP. Ketuk "Belum punya nomor?" di bawah untuk membuat atau mendaftarkannya.');if(!confirm('Nomor telepon: +'+p+'. Apakah nomor sudah benar?'))return;ob.cc=cc;ob.num=p;otpSend(p);obOtp()};
+A.obre=function(){otpSend(ob.num);toast('Kode baru dikirim ke web Nomor dan OTP')};
+A.obv=function(){var c=$('oc').value.trim();if(!otpCheck(ob.num,c))return toast('Kode salah atau sudah kedaluwarsa.');var l=lsG('co-nums');l.forEach(function(x){if(x.num===ob.num)x.used=1});lsS('co-nums',l);obName()};
+route();
+function regM(c){modal('<h2>Daftar</h2><p class="time">Buat nomor dulu, lalu daftar untuk memakai Chat Offline.</p><label>Nama</label><input type="text" id="rn" maxlength="25" autocomplete="off"><label>Negara</label><select id="rcc">'+ccOpts('62')+'</select><label>Nomor HP</label><input type="tel" id="rp" maxlength="14" placeholder="Tekan Buat nomor" autocomplete="off"><button class="lnk" data-a="rbuat">Buat nomor</button><div class="time" id="rerr" style="color:#e53935;min-height:18px"></div><button class="lnk" data-a="nw">Buka web Nomor dan OTP</button><div class="acts">'+(c?'<button data-a="regx">Batal</button>':'')+'<button data-a="rdaf">Daftar</button></div>')}
+function rerr(t){var e=$('rerr');if(e)e.textContent=t}
+A.rbuat=function(){var cc=$('rcc').value,l=lsG('co-nums'),n;do{n=newNum(cc)}while(l.some(function(x){return x.num===n})||rnums[n]);l.push({num:n,cc:cc,ts:Date.now(),used:0});lsS('co-nums',l);$('rp').value=n.slice(cc.length);rerr('');toast('Nomor +'+n+' dibuat')};
+A.rdaf=function(){var n=$('rn').value.trim(),cc=$('rcc').value,p=fullNum(cc,$('rp').value);if(!n)return rerr('Nama wajib diisi.');if(!p)return rerr('Nomor belum ada atau tidak valid. Tekan Buat nomor.');var l=lsG('co-nums'),x=l.filter(function(y){return y.num===p})[0];if(!x)return rerr('Nomor +'+p+' belum dibuat. Tekan Buat nomor, atau daftarkan nomor itu di web Nomor dan OTP.');if(x.used)return rerr('Nomor ini sudah dipakai akun lain. Tekan Buat nomor untuk nomor baru.');x.used=1;lsS('co-nums',l);db.me={name:n,num:p,cc:cc,bio:'Halo! Saya pakai Chat Offline.'};save();closeM();renderList();renderSt();pubNum();pubProf();subscribe();toast('Pendaftaran berhasil')};
+function deliver(c,m){if(c.self){m.s=2;return}if(c.group||!c.num)return;var to=norm(c.num);if(RDB&&rnums[to]&&!lsG('co-nums').some(function(x){return x.used&&x.num===to})){sendRemote(m,to);return}if(!lsG('co-nums').some(function(x){return x.used&&x.num===to})){if(!c.warn){c.warn=1;toast('Nomor +'+to+' belum terdaftar di Chat Offline. Pesan belum diterima.')}return}var q=lsG('co-in');q.push({id:m.id,to:to,from:norm(db.me.num),fn:db.me.name,t:m.t||'',img:m.img||'',a:m.a||'',d:m.d||0,ts:m.ts});lsS('co-in',q)}
+function pull(){if(!db.me)return;pubProf();var me=norm(db.me.num),l=lsG('co-nums');if(!l.some(function(x){return x.num===me})){l.push({num:me,cc:db.me.cc||'62',ts:Date.now(),used:1});lsS('co-nums',l)}
+  var q=lsG('co-in'),ack=lsG('co-ack'),ch=0,got=0;
+  var rest=q.filter(function(x){if(x.to!==me)return true;var c=db.chats.filter(function(k){return k.num&&norm(k.num)===x.from})[0];if(c&&c.blocked)return false;if(!c){c={id:Date.now()+Math.floor(Math.random()*1e3),name:x.fn||('+'+x.from),num:x.from,auto:1,msgs:[]};db.chats.push(c)}var m={me:0,ts:x.ts};if(x.t)m.t=x.t;if(x.img)m.img=x.img;if(x.a){m.a=x.a;m.d=x.d}c.hidden=0;c.msgs.push(m);ack.push({to:x.from,id:x.id});ch=1;got++;return false});
+  if(ch)lsS('co-in',rest);
+  ack=ack.filter(function(a){if(a.to!==me)return true;db.chats.forEach(function(c){c.msgs.forEach(function(m){if(m.id===a.id&&m.s!==2){m.s=2;ch=1}})});return false});
+  if(ch){lsS('co-ack',ack);save();renderList();if(cur!==null&&find(cur))renderMsgs();if(got)toast(got+' pesan baru')}}
+window.addEventListener('storage',function(e){if(e.key==='co-in'||e.key==='co-ack')pull()});
+function regOk(c){return !!c&&(c.self||c.group||!c.num||!!rnums[norm(c.num)]||lsG('co-nums').some(function(x){return x.used&&x.num===norm(c.num)}))}
+function chkBar(t){var c=find(cur);if(!c)return;var ok=regOk(c)&&!c.blocked,a=document.querySelector('[data-a=att]');$('txt').disabled=!ok;$('sv').disabled=!ok;if(a)a.disabled=!ok;$('txt').placeholder=ok?'Ketik pesan':(c.blocked?'Nomor diblokir':'Nomor belum terdaftar di Chat Offline');if(!ok){$('csub').textContent=c.blocked?'Diblokir':'Belum terdaftar di Chat Offline';if(t&&!c.blocked)toast('Nomor +'+norm(c.num)+' belum terdaftar. Chat aktif setelah nomornya terdaftar di Chat Offline.')}else if(c.num&&!c.group)$('csub').textContent=dn(c.num)}
+function cv(){var e=$('cv'),n=$('no');if(!e||!n)return;if(!n.value.trim()){e.textContent='';return}var p=fullNum($('cc').value,n.value);if(!p){e.style.color='#e53935';e.textContent='Format nomor tidak valid.';return}var ok=lsG('co-nums').some(function(x){return x.used&&x.num===p});e.style.color=ok?'var(--green)':'#e67e22';e.textContent=ok?'Nomor valid dan terdaftar di Chat Offline.':'Nomor belum terdaftar di Chat Offline.'}
+document.addEventListener('input',function(e){if(e.target.id==='no')cv()});
+document.addEventListener('change',function(e){if(e.target.id==='cc')cv()});
+A.addc=function(){modal('<h2>Simpan nomor</h2><label>Nama</label><input type="text" id="nm" maxlength="30" autocomplete="off"><label>Negara</label><select id="cc">'+ccOpts(db.me&&db.me.cc||'62')+'</select><label>Nomor telepon</label><input type="tel" id="no" maxlength="14" placeholder="Nomor tanpa kode negara" autocomplete="off"><div id="cv" class="time" style="min-height:18px;margin-top:6px"></div><div class="acts"><button data-a="x">Batal</button><button data-a="saveC">Simpan</button></div>')};
+A.saveC=function(){var n=$('nm').value.trim(),p=fullNum($('cc').value,$('no').value);if(!n)return toast('Nama wajib diisi.');if(!p)return toast('Nomor tidak valid. Pilih negara dan isi nomor tanpa kode negara.');var d=db.chats.filter(function(c){return c.num&&norm(c.num)===p})[0];if(d){toast('Nomor sudah tersimpan.');closeM();openChat(d.id);return}var id=Date.now(),c={id:id,name:n,num:p,msgs:[]};db.chats.push(c);save();closeM();renderList();if(regOk(c)){toast('Nomor disimpan');openChat(id)}else toast('Nomor disimpan, tapi belum terdaftar di Chat Offline. Chat aktif setelah nomornya terdaftar.')};
+function pres(){var p=lsG('co-pres');return Array.isArray(p)?{}:p}
+function beat(){if(db.me&&!document.hidden){var p=pres();p[norm(db.me.num)]=Date.now();lsS('co-pres',p)}}
+function isOn(n){var t=pres()[n];return !!t&&Date.now()-t<8000}
+setInterval(beat,3000);document.addEventListener('visibilitychange',beat);
+function callTxt(t){var e=$('cs');if(e)e.textContent=t}
+function callUi(o,t,v){return '<video id="lv" autoplay muted playsinline></video><div class="ci">'+av(o,96)+'<h2>'+esc(o.name)+vb(o.num)+'</h2><p id="cs">'+t+'</p></div><div class="cb"><button class="rb" data-a="mute" aria-label="Bisukan">'+ic('mic',26)+'</button>'+(v?'<button class="rb" data-a="cam" aria-label="Kamera">'+ic('vid',26)+'</button>':'')+'<button class="rb red" data-a="endc" aria-label="Akhiri">'+ic('ph',26)+'</button></div>'}
+function media(v){if(navigator.mediaDevices)navigator.mediaDevices.getUserMedia({audio:true,video:!!v}).then(function(s){if(!cl){s.getTracks().forEach(function(t){t.stop()});return}cl.s=s;if(v){$('lv').srcObject=s;$('lv').style.display='block'}}).catch(function(){toast('Izin mikrofon atau kamera ditolak.')})}
+function callTick(){if(!cl)return;if(cl.t0)callTxt(fmt((Date.now()-cl.t0)/1000));else if(Date.now()-cl.ts0>3e4)endCall(cl.in?'tak terjawab':'tidak ada jawaban')}
+function startCall(v){var c=find(cur);if(c.self){toast('Tidak bisa menelepon diri sendiri.');return}if(c.group||!c.num){toast('Panggilan hanya untuk kontak yang punya nomor.');return}if(!regOk(c)){toast('Nomor belum terdaftar di Chat Offline.');return}if(c.blocked){toast('Nomor ini kamu blokir.');return}
+  var to=norm(c.num),on=isOn(to);cl={v:v,c:c,o:c,to:to,on:on,id:Date.now()+'-'+rnd(3),t0:0,s:null,ts0:Date.now()};
+  $('call').innerHTML=callUi(c,'Memanggil…',v);$('call').classList.add('on');media(v);
+  if(on){lsS('co-call',{id:cl.id,from:norm(db.me.num),fn:db.me.name,to:to,v:v,st:'ring',ts:Date.now()});var id=cl.id;setTimeout(function(){if(cl&&cl.id===id&&!cl.t0)callTxt('Berdering…')},1200)}
+  cl.i=setInterval(callTick,1000)}
+function incoming(s){var ch=db.chats.filter(function(k){return k.num&&norm(k.num)===s.from})[0],o=ch||{name:s.fn||('+'+s.from)};cl={in:1,id:s.id,from:s.from,to:norm(db.me.num),v:s.v,o:o,nm:o.name,t0:0,s:null,ts0:Date.now()};
+  $('call').innerHTML='<div class="ci">'+av(o,96)+'<h2>'+esc(o.name)+vb(o.num||s.from)+'</h2><p id="cs">'+(s.v?'Video call masuk':'Panggilan suara masuk')+'</p></div><div class="cb"><button class="rb red" data-a="endc" aria-label="Tolak">'+ic('ph',26)+'</button><button class="rb" style="background:#21c063" data-a="ansc" aria-label="Terima">'+ic('ph',26)+'</button></div>';$('call').classList.add('on');cl.i=setInterval(callTick,1000)}
+function endCall(why,noSig){if(!cl)return;var c=cl;cl=null;clearInterval(c.i);if(c.s)c.s.getTracks().forEach(function(t){t.stop()});$('call').classList.remove('on');var d=c.t0?Math.round((Date.now()-c.t0)/1000):0,me=norm(db.me.num),other=c.in?c.from:c.to;
+  if(!noSig&&c.id&&(c.in||c.on))lsS('co-call',{id:c.id,from:me,to:other,st:(c.in&&!c.t0)?'dec':'end',ts:Date.now()});
+  var ch=db.chats.filter(function(k){return k.num&&norm(k.num)===other})[0];if(!ch&&c.in){ch={id:Date.now(),name:c.nm||('+'+other),num:other,msgs:[]};db.chats.push(ch)}if(!ch)return;
+  ch.msgs.push({k:1,me:c.in?0:1,v:c.v,t:(c.v?'Video call':'Panggilan suara')+' · '+(d?fmt(d):(why||'dibatalkan')),ts:Date.now()});save();renderList();if(cur===ch.id)renderMsgs()}
+A.endc=function(){endCall('dibatalkan')};
+A.ansc=function(){var c=cl;if(!c||!c.in)return;c.t0=Date.now();clearInterval(c.i);lsS('co-call',{id:c.id,from:c.to,to:c.from,st:'ans',ts:Date.now()});$('call').innerHTML=callUi(c.o,'0:00',c.v);media(c.v);c.i=setInterval(callTick,1000)};
+window.addEventListener('storage',function(e){if(e.key==='co-nums'){renderList();if(cur!==null)chkBar()}if(e.key!=='co-call'||!e.newValue||!db.me)return;var s;try{s=JSON.parse(e.newValue)}catch(x){return}if(s.to!==norm(db.me.num))return;if(s.st==='ring'){if(!cl&&Date.now()-s.ts<20000&&!db.chats.some(function(k){return k.num&&norm(k.num)===s.from&&k.blocked}))incoming(s)}else if(cl&&s.id===cl.id){if(s.st==='ans'&&!cl.t0){cl.t0=Date.now();callTxt('0:00')}else if(s.st==='dec')endCall('Panggilan ditolak',1);else if(s.st==='end')endCall(cl.t0?'':(cl.in?'tak terjawab':'tidak dijawab'),1)}});
+function delMold(id){var c=find(id);if(!c)return;modal('<h2>Hapus chat</h2><p class="time">'+esc(c.name)+'</p><button class="lnk" data-a="dmsg" data-id="'+c.id+'">Hapus semua pesan</button>'+(c.self?'':'<button class="lnk" style="color:#e53935" data-a="dchat" data-id="'+c.id+'">'+(c.group?'Hapus grup':'Hapus chat dan kontak')+'</button>')+'<div class="acts"><button data-a="x">Batal</button></div>')}
+A.dlm=function(){delM(cur)};A.delc=function(){delM(cur)};
+A.dmsg=function(a){var c=find(a.dataset.id);if(!c)return;c.msgs=[];save();closeM();renderList();if(cur==c.id)renderMsgs();toast('Pesan dihapus')};
+A.dchat=function(a){var id=a.dataset.id;db.chats=db.chats.filter(function(c){return c.id!=id});save();closeM();if(cur==id)A.back();else renderList();toast('Chat dihapus')};
+document.addEventListener('contextmenu',function(e){var it=e.target.closest&&e.target.closest('.item[data-a=open]');if(it&&$('home').contains(it)){e.preventDefault();delM(it.dataset.id)}});
+function delM(id){var c=find(id);if(!c)return;modal('<h2>'+esc(c.name)+'</h2><button class="lnk" style="color:#e53935" data-a="dchat" data-id="'+c.id+'">'+(c.group?'Hapus grup':'Hapus chat')+'</button><div class="acts"><button data-a="x">Batal</button></div>')}
+A.dchat=function(a){var id=a.dataset.id,c=find(id);if(!c)return;if(c.group)db.chats=db.chats.filter(function(k){return k.id!=id});else{c.msgs=[];if(!c.self)c.hidden=1}save();closeM();if(cur==id)A.back();else renderList();toast('Chat dihapus')};
+A.blk=function(){var c=find(cur);if(!c)return;if(c.blocked){c.blocked=0;save();chkBar();info();renderList();toast('Blokir dibuka');return}modal('<h2>Blokir nomor?</h2><p>'+esc(c.name)+'</p><p class="time" style="margin-top:4px">Kamu tidak akan menerima pesan dan panggilan dari nomor ini, dan tidak bisa mengirim pesan kepadanya.</p><div class="acts"><button data-a="x">Batal</button><button data-a="blk2" style="color:#e53935">Blokir</button></div>')};
+A.blk2=function(){var c=find(cur);if(!c)return;c.blocked=1;save();closeM();chkBar();info();renderList();toast('Nomor diblokir')};
+var ISO={'62':'ID','855':'KH','856':'LA','60':'MY','65':'SG','66':'TH','84':'VN','63':'PH','673':'BN','670':'TL','95':'MM','91':'IN','86':'CN','81':'JP','82':'KR','966':'SA','971':'AE','61':'AU','44':'GB','1':'US'},sel=[],lpT=0,lpF=0,vo=null,fromSt=0,pfc=null,rprof={},rst={},RDB=null,rnums={},subs=[],pw=0;
+function pfMap(){if(!pfc){var a=lsG('co-prof'),k;if(Array.isArray(a))a={};for(k in rprof)a[k]=rprof[k];pfc=a}return pfc}
+function pfPhoto(n){var m=pfMap()[norm(n)];return m&&m.p||''}
+function pubProf(){if(!db.me)return;var k=norm(db.me.num),m=lsG('co-prof'),o={n:db.me.name,b:db.me.bio||'',p:db.me.photo||''};if(Array.isArray(m))m={};m[k]=o;lsS('co-prof',m);pfc=null;if(RDB)RDB.collection('profiles').doc(k).set(o).catch(function(){})}
+function pubSt(){if(!db.me)return;var k=norm(db.me.num),l=live(),m=lsG('co-st');if(Array.isArray(m))m={};m[k]=l;lsS('co-st',m);if(RDB){var r=l.slice(-3);if(JSON.stringify(r).length>235000)r=r.filter(function(s){return s.type==='t'});RDB.collection('statuses').doc(k).set({list:r,ts:Date.now()}).catch(function(){})}}
+function stOf(c){var k=norm(c.num),a=lsG('co-st');if(Array.isArray(a))a={};return (rst[k]||a[k]||[]).filter(function(s){return Date.now()-s.ts<864e5})}
+function othersHtml(){var o=db.chats.filter(function(c){return c.num&&!c.group&&!c.self&&!c.blocked&&stOf(c).length});if(!o.length)return '';return '<div class="lt">Pembaruan terbaru</div>'+o.map(function(c){var l=stOf(c);return '<button class="item" data-a="vst2" data-id="'+c.id+'"><div class="ring">'+av(c,42)+'</div><div class="meta"><div class="name">'+esc(c.name)+vb(c.num)+'</div><div class="last"><span>'+hm(l[l.length-1].ts)+'</span></div></div></button>'}).join('')}
+A.vst2=function(a){var c=find(a.dataset.id);if(!c)return;vq=stOf(c);vi=0;vo={name:c.name,num:c.num,cid:c.id};showSt()};
+function bigPhoto(o,back){var w=$('vw'),p=o.photo||(o.num?pfPhoto(o.num):'');clearTimeout(vt);w.dataset.a=back||'vcl';w.style.background='#000';w.innerHTML=p?'<img src="'+p+'" alt="Foto profil">':'<div style="text-align:center">'+av(o,240)+'<p style="margin-top:14px">'+esc(o.name)+'</p></div>';w.classList.add('on')}
+A.vpf=function(a){clearTimeout(vt);if(a.dataset.k==='foto'){bigPhoto(vo,'vres');return}$('vw').classList.remove('on');if(vo.own)profile();else{cur=vo.cid;fromSt=1;info()}};
+A.vres=function(){showSt()};
+A.ipf=function(){var c=find(cur);if(c)bigPhoto(c)};
+var _ib2=A.ib;A.ib=function(){_ib2();if(fromSt){cur=null;fromSt=0}};
+function kmatch(c){var q=($('kq')?$('kq').value:'').toLowerCase();return !q||c.name.toLowerCase().indexOf(q)>-1||(c.num||'').indexOf(q)>-1}
+A.ksr=function(){var b=$('ksb');b.style.display=b.style.display==='none'?'block':'none';if(b.style.display==='none'){$('kq').value='';A.kon()}else $('kq').focus()};
+function nvOpts(s){return CC.map(function(c){return '<option value="'+c[1]+'"'+(c[1]===s?' selected':'')+'>'+ISO[c[1]]+' +'+c[1]+'</option>'}).join('')}
+function nvChk(){var n=$('nsv');if(!n)return;var p=fullNum($('ncc2').value,$('nph').value),e=$('nvv');n.classList.toggle('dim',!(($('nf').value.trim()||$('nl').value.trim())&&p));if(!$('nph').value.trim()){e.textContent='';return}if(!p){e.style.color='#e53935';e.textContent='Format nomor tidak valid.';return}var r=regOk({num:p});e.style.color=r?'var(--green)':'#e67e22';e.textContent=r?'Nomor terdaftar di Chat Offline.':'Nomor belum terdaftar di Chat Offline.'}
+A.addc=function(){closeM();$('nvb').innerHTML='<div class="fld">'+ic('usr')+'<input id="nf" placeholder="Nama depan" maxlength="25" autocomplete="off"></div><div class="fld"><span style="width:24px;flex:none"></span><input id="nl" placeholder="Nama belakang" maxlength="25" autocomplete="off"></div><div class="fld"><span style="font-size:22px;color:var(--sub);width:24px;text-align:center;flex:none">@</span><input id="nu" placeholder="Nama pengguna" maxlength="25" autocomplete="off"></div><div class="fld">'+ic('ph')+'<div class="sl"><label>Negara</label><select id="ncc2">'+nvOpts(db.me&&db.me.cc||'62')+'</select></div><input id="nph" type="tel" placeholder="Telepon" maxlength="14" autocomplete="off"></div><div id="nvv" class="time" style="margin:8px 16px 0 56px;min-height:18px"></div>';$('nsv').classList.add('dim');$('app').classList.add('n')};
+A.nb=function(){$('app').classList.remove('n')};
+A.nsave=function(){var nm=($('nf').value.trim()+' '+$('nl').value.trim()).trim(),p=fullNum($('ncc2').value,$('nph').value);if(!nm)return toast('Isi nama kontak.');if(!p)return toast('Nomor telepon tidak valid.');var d=db.chats.filter(function(c){return c.num&&norm(c.num)===p})[0];if(d){toast('Nomor sudah tersimpan.');$('app').classList.remove('n');openChat(d.id);return}var id=Date.now(),c={id:id,name:nm,num:p,un:$('nu').value.trim(),msgs:[]};db.chats.push(c);save();$('app').classList.remove('n');renderList();if($('app').classList.contains('k'))A.kon();if(regOk(c)){toast('Kontak disimpan');openChat(id)}else toast('Kontak disimpan, tapi nomornya belum terdaftar di Chat Offline. Chat aktif setelah terdaftar.')};
+document.addEventListener('input',function(e){var i=e.target.id;if(i==='nf'||i==='nl'||i==='nph')nvChk();if(i==='kq')A.kon()});
+document.addEventListener('change',function(e){if(e.target.id==='ncc2')nvChk()});
+function setSel(){var t=$('msgs').scrollTop;$('selb').classList.toggle('on',sel.length>0);$('selc').textContent=sel.length;renderMsgs();$('msgs').scrollTop=t}
+var _sb=document.createElement('div');_sb.id='selb';_sb.className='top selb';_sb.innerHTML='<button class="ico" data-a="selx" aria-label="Batal">'+ic('back')+'</button><h1 id="selc">0</h1><button class="ico" data-a="seld" aria-label="Hapus pesan">'+ic('del')+'</button>';$('chat').appendChild(_sb);
+$('msgs').addEventListener('pointerdown',function(e){var b=e.target.closest('.b[data-mi]');if(!b)return;clearTimeout(lpT);lpT=setTimeout(function(){lpT=0;lpF=1;setTimeout(function(){lpF=0},800);var i=+b.dataset.mi;if(sel.indexOf(i)<0)sel.push(i);setSel()},450)});
+['pointerup','pointercancel','scroll'].forEach(function(ev){$('msgs').addEventListener(ev,function(){clearTimeout(lpT);lpT=0;if(ev==='pointerup')setTimeout(function(){lpF=0},60)})});
+$('msgs').addEventListener('contextmenu',function(e){if(e.target.closest('.b'))e.preventDefault()});
+$('msgs').addEventListener('click',function(e){var b=e.target.closest('.b[data-mi]');if(lpF){lpF=0;e.stopPropagation();e.preventDefault();return}if(!sel.length||!b)return;e.stopPropagation();var i=+b.dataset.mi,k=sel.indexOf(i);if(k<0)sel.push(i);else sel.splice(k,1);setSel()},true);
+A.selx=function(){sel=[];setSel()};
+A.seld=function(){var c=find(cur),n=sel.length;if(!n)return;modal('<p style="font-size:16px;color:var(--sub)">'+(n===1?(c.msgs[sel[0]]&&!c.msgs[sel[0]].me?'Hapus pesan dari '+esc(c.name)+'?':'Hapus pesan?'):'Hapus '+n+' pesan?')+'</p><div class="acts"><button data-a="x">Batal</button><button data-a="seld2">Hapus untuk saya</button></div>')};
+A.seld2=function(){var c=find(cur);c.msgs=c.msgs.filter(function(m,i){return sel.indexOf(i)<0});sel=[];save();closeM();setSel();renderList()};
+A.nsync=function(){modal('<h2>Chat antar HP</h2><p>'+(RDB?'Tersambung. Nomor, profil, status, dan pesan disinkronkan lewat penyimpanan bersama. Hanya akun yang punya izin tulis (pemilik dan Kontributor) yang bisa mengirim.':'Tidak tersambung. Buka halaman ini dari akun claude.ai yang punya akses ke web ini, lalu muat ulang. Sebelum itu pesan hanya terkirim di browser yang sama.')+'</p><div class="acts"><button data-a="x">Tutup</button></div>')};
+function remote(){if(RDB||!window.claude||!claude.use)return;claude.use('db').then(function(d){if(!d)return;RDB=d;subAll();subscribe();pubNum();pubProf();pubSt()}).catch(function(){})}
+function warnW(e){if(!pw){pw=1;toast('Akunmu belum punya izin menyimpan data bersama, jadi belum bisa chat antar HP. Minta pemilik web memberi akses Kontributor.')}}
+function subAll(){RDB.collection('numbers').onSnapshot(function(s){rnums={};s.docs.forEach(function(d){rnums[d.id]=1});renderList();if(cur!==null)chkBar()},function(){});
+  RDB.collection('profiles').onSnapshot(function(s){rprof={};s.docs.forEach(function(d){rprof[d.id]=d.data()});pfc=null;syncNames();refreshUI()},function(){});
+  RDB.collection('statuses').onSnapshot(function(s){rst={};s.docs.forEach(function(d){var x=d.data();rst[d.id]=x&&x.list||[]});if(tab==='s')renderSt()},function(){})}
+function subscribe(){subs.forEach(function(u){try{u()}catch(e){}});subs=[];if(!RDB||!db.me)return;var me=norm(db.me.num);
+  subs.push(RDB.collection('msgs').where('to','==',me).onSnapshot(function(s){s.docs.forEach(function(d){inRemote(d.id,d.data())})},function(){}));
+  subs.push(RDB.collection('acks').where('to','==',me).onSnapshot(function(s){var ch=0;s.docs.forEach(function(d){db.chats.forEach(function(c){c.msgs.forEach(function(m){if(m.id===d.id&&m.s!==2){m.s=2;ch=1}})});RDB.collection('acks').doc(d.id).delete().catch(function(){})});if(ch){save();renderList();if(cur!==null&&find(cur))renderMsgs()}},function(){}))}
+function pubNum(){if(RDB&&db.me)RDB.collection('numbers').doc(norm(db.me.num)).set({n:db.me.name,ts:Date.now()}).catch(warnW)}
+function sendRemote(m,to){RDB.collection('msgs').doc(m.id).set({to:to,from:norm(db.me.num),fn:db.me.name,t:m.t||'',img:m.img||'',a:m.a||'',d:m.d||0,ts:m.ts}).catch(function(e){if(e&&e.code==='invalid_argument')warnW();else toast('Pesan belum terkirim ke HP lain. Coba lagi nanti.')})}
+function inRemote(id,x){if(!x||!db.me)return;var has=db.chats.some(function(c){return c.msgs.some(function(m){return m.rid===id})});
+  if(!has){var c=db.chats.filter(function(k){return k.num&&norm(k.num)===x.from})[0];if(c&&c.blocked){RDB.collection('msgs').doc(id).delete().catch(function(){});return}
+    if(!c){c={id:Date.now()+Math.floor(Math.random()*1e3),name:x.fn||('+'+x.from),num:x.from,auto:1,msgs:[]};db.chats.push(c)}
+    var m={me:0,ts:x.ts,rid:id};if(x.t)m.t=x.t;if(x.img)m.img=x.img;if(x.a){m.a=x.a;m.d=x.d}c.hidden=0;c.msgs.push(m);save();renderList();if(cur!==null&&find(cur))renderMsgs();toast('1 pesan baru')}
+  RDB.collection('acks').doc(id).set({to:x.from,id:id}).then(function(){return RDB.collection('msgs').doc(id).delete()}).catch(function(){})}
+function syncNames(){var ch=0,m=pfMap();db.chats.forEach(function(c){if(c.auto&&c.num&&!c.group){var p=m[norm(c.num)];if(p&&p.n&&p.n!==c.name){c.name=p.n;ch=1}}});if(ch)save()}
+function profLines(c){if(!c.num||c.group)return '';var p=pfMap()[norm(c.num)];if(!p||!p.n)return '';return '<div class="is" style="margin-top:6px">Nama profil: '+esc(p.n)+'</div>'+(p.b?'<div class="is" style="margin-top:4px">'+esc(p.b)+'</div>':'')}
+function refreshUI(){renderList();if($('app').classList.contains('k'))A.kon();if(cur!==null){var c=find(cur);if(c){$('cname').innerHTML=esc(c.name)+vb(c.num);$('cav').innerHTML=av(c,38);if($('app').classList.contains('i'))info()}}if(tab==='s')renderSt()}
+window.addEventListener('storage',function(e){if(e.key==='co-prof'){pfc=null;syncNames();refreshUI()}});
+A.abt=function(){modal('<h2>Chat Offline</h2><p>Versi 1.0. Aplikasi chat lokal: semua pesan, foto, dan status tersimpan di perangkat ini tanpa internet.</p><div class="acts"><button data-a="x">Tutup</button></div>')};
+A.kon=function(){var cs=db.chats.filter(function(c){return !c.group&&!c.self&&kmatch(c)}).sort(function(a,b){return a.name.localeCompare(b.name)}),sc=db.chats.filter(function(c){return c.self})[0],L='',h='<button class="mrow kr" data-a="newg"><span class="gi">'+ic('grp')+'</span><b>Grup baru</b></button><button class="mrow kr" data-a="addc"><span class="gi">'+ic('addu')+'</span><b>Kontak baru</b></button>';
+  if(sc)h+='<button class="item" data-a="open" data-id="'+sc.id+'">'+av(db.me,40)+'<div class="meta" style="border:0;padding:0"><div class="name">'+esc(db.me.name)+' (Anda)'+vb(db.me.num)+'</div><div class="last"><span>Kirim pesan ke diri sendiri</span></div></div></button>';
+  h+='<div class="lt">Kontak di Chat Offline</div>';
+  cs.forEach(function(c){h+='<button class="item" data-a="open" data-id="'+c.id+'">'+av(c,40)+'<div class="meta" style="border:0;padding:0"><div class="name">'+esc(c.name)+vb(c.num)+'</div><div class="last"><span>'+esc(c.num?dn(c.num):'Belum ada nomor')+'</span></div></div></button>'});
+  $('kl').innerHTML=h;$('kc').textContent=cs.length+' kontak';$('app').classList.add('k')};
+document.addEventListener('change',function(e){var t=e.target,f=t.files&&t.files[0];if(!f||(t.id!=='fp'&&t.id!=='fs'))return;t.value='';shrink(f,900,function(d){if(t.id==='fp'){pimg=d;modal('<h2>Kirim foto</h2><div class="pc"><img class="pv" src="'+d+'" alt=""></div><input type="text" id="cap" maxlength="100" placeholder="Tambahkan keterangan…" autocomplete="off"><div class="acts"><button data-a="x">Batal</button><button data-a="sendp">Kirim</button></div>')}else{simg=d;modal('<h2>Status foto</h2><div class="pc"><img class="pv" src="'+d+'" alt=""></div><input type="text" id="cap" maxlength="100" placeholder="Tambahkan keterangan…" autocomplete="off"><div class="acts"><button data-a="x">Batal</button><button data-a="posfoto">Posting</button></div>')}})});
+$('q').addEventListener('input',renderList);
+$('txt').addEventListener('input',setSv);
+$('txt').addEventListener('keydown',function(e){if(e.key==='Enter')sendT()});
+document.querySelectorAll('[data-i]').forEach(function(e){e.innerHTML=ic(e.dataset.i)});
+load();renderList();
+pull();remote();if(!db.me)regM(0);if(0)modal('<h2>Daftar</h2><p class="time">Buat akun Chat Offline di perangkat ini.</p><label>Nama</label><input type="text" id="rn" maxlength="25" autocomplete="off"><label>Nomor HP</label><input type="tel" id="rp" maxlength="16" placeholder="0812…" autocomplete="off"><div class="acts"><button data-a="reg">Daftar</button></div>');
+})();
+</script>
+</body>
+</html>
